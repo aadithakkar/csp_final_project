@@ -1,0 +1,4 @@
+env/
+venv/bin
+venv/include
+venv/lib
