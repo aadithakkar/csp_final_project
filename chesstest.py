@@ -2,7 +2,7 @@ import chess
 import chess.engine
 import random
 
-STOCKFISH_PATH = "/usr/games/stockfish"  # Replace with your Stockfish path
+STOCKFISH_PATH = "/usr/games/stockfish"
 
 def get_user_move(board):
     while True:
@@ -18,11 +18,10 @@ def get_user_move(board):
 
 def get_engine_move(engine, board):
     try:
-        # Ask for top 3 moves at low skill and short time
         engine.configure({"Skill Level": 2})
         info = engine.analyse(board, chess.engine.Limit(time=0.05), multipv=3)
         moves = [entry["pv"][0] for entry in info]
-        chosen = random.choice(moves)  # pick from top 3
+        chosen = random.choice(moves)
         return chosen
     except Exception as e:
         print("Engine failed:", e)
@@ -35,7 +34,6 @@ def play_game():
 
     with chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH) as engine:
         while not board.is_game_over():
-            # User (White) move
             move = get_user_move(board)
             board.push(move)
             print("\nYou played:", move)
@@ -44,13 +42,11 @@ def play_game():
             if board.is_game_over():
                 break
 
-            # Engine (Black) move
             move = get_engine_move(engine, board)
             board.push(move)
             print("\nBot plays:", move)
             print(board)
 
-        # Game result
         print("\nGame over:", board.result())
         print(board.outcome().termination.name)
 

@@ -53,8 +53,6 @@ class Timer(pygame.sprite.Sprite):
             return
         self.image.fill((250, 250, 250))
         current = time.monotonic()
-        # if current < self.stime:
-        #     self.stime = current
         rectwidth = HALF - ((current - self.stime) / self.total_time) * HALF
         if rectwidth <= 0:
             self.kill()
@@ -114,19 +112,16 @@ class TimerAdder(pygame.sprite.Sprite):
 class Game(pygame.sprite.Sprite):
   def __init__(self, x, y, proj):
     self.groups = all_sprites, game_sprites
-    pygame.sprite.Sprite.__init__(self, self.groups)
-    self.image = pygame.Surface((HALF, HALF))
+    pygame.sprite.Sprite.__init__(self, self.groups) # Initialize the object as a Pygame Sprite.
+    self.image = pygame.Surface((HALF, HALF)) # Create a surface with length & width equal to half the screen width
     self.rect = self.image.get_rect()
-    self.x, self.y = x, y
+    self.x, self.y = x, y 
     self.rect.x = x
-    self.rect.y = y
-    self.image.fill((180, 180, 180))
-    self.selected = None
-    self.tilesize = HALF / 8
-    self.proj = proj
+    self.rect.y = y # Position the minigame correctly (x & y)
+    self.proj = proj # Set the game state as an attribute so it can later be referred to
 
 class Card(pygame.sprite.Sprite):
-    def __init__(self, x, y, number, hidden, order):
+    def __init__(self, y, number, hidden, order):
         self.groups = all_sprites
         self._layer = 1
         if hidden:
@@ -137,7 +132,6 @@ class Card(pygame.sprite.Sprite):
         self.image = pygame.Surface([self.wid, self.height])
         self.image.fill((0, 0, 0))
         self.rect = self.image.get_rect()
-        self.rect.x = x
         self.rect.y = y - self.wid / 2
         self.num = number
         self.val = min(self.num, 10)
@@ -181,17 +175,19 @@ class BlackjackIntro(Game):
 
 class NumberGuesser(Game):
     def __init__(self, x, y, proj):
-        Game.__init__(self, x, y, proj)
-        self.number = random.randint(1, 100)
-        self.typed = ""
-        self.paint()
-        self.timer = Timer(x, y + HALF - 15, 30, 0, self)
+        Game.__init__(self, x, y, proj) # Initialize the object as a 'Game', giving it the basic properties
+        self.number = random.randint(1, 100) # Generate the target number
+        self.typed = "" # Define the variable that stores what is currently typed
+        self.paint() # Draw the image of the minigame
+        self.timer = Timer(x, y + HALF - 15, 30, 0, self) # Create and store the timer
     def paint(self):
         self.image.fill((170, 150, 0))
         pygame.draw.rect(self.image, (220, 200, 150), pygame.Rect(10, 10, HALF - 20, HALF - 20), border_radius=15)
         write(self.typed, (HALF / 2, HALF / 2), (0, 0, 0), 50, self.image)
+        # Determine whether anything is typed in as a guess
         if self.typed != "":
             typed = int(self.typed)
+            # Compare the guess to the target number
             if typed < self.number:
                 text = "HIGHER"
                 col = (0, 200, 0)
@@ -199,13 +195,16 @@ class NumberGuesser(Game):
                 text = "LOWER"
                 col = (200, 0, 0)
             else:
+                # If they are equal, end the game and add points
                 self.kill()
                 self.timer.kill()
                 self.proj.gen_points(self.x, self.y, random.randint(10, 18), 1)
                 return
-            write(text, (HALF / 2, HALF * 3 / 4), col, 50, self.image)
+            # Write the feedback on the sprite's image
+            write(text, (HALF * 1 / 2, HALF * 3 / 4), col, 50, self.image)
         else:
-            write("Guess a number 1 - 100", (HALF / 2, HALF * 1 / 4), (0, 0, 0), 50, self.image)
+            # If nothing is typed, prompt the user to make a guess
+            write("Guess a number 1 - 100", (HALF  * 1 / 2, HALF * 1 / 4), (0, 0, 0), 50, self.image)
     def response(self, ev):
         if ev.key == pygame.K_BACKSPACE:
             if self.typed != "":
@@ -217,10 +216,13 @@ class NumberGuesser(Game):
 class Blackjack(Game):
     def __init__(self, x, y, bet, proj):
         Game.__init__(self, x, y, proj)
-        print(bet)
         pygame.draw.rect(self.image, (0, 100, 0), pygame.Rect(10, 10, HALF - 20, HALF - 20), border_radius=15)
-        self.dealer = [Card(0, y + 100, random.randint(1, 13), 0, 1), Card(0, y + 100, random.randint(1, 13), 1, 0)]
-        self.player = [Card(0, y + 450, random.randint(1, 13), 0, 0), Card(0, y + 450, random.randint(1, 13), 0, 1)]
+        self.dealer = [] # Dealer's cards
+        self.player = [] # Player's cards
+        self.dealer.append(Card(y + 100, random.randint(1, 13), 0, 1))
+        self.dealer.append(Card(y + 100, random.randint(1, 13), 1, 0))
+        self.player.append(Card(y + 450, random.randint(1, 13), 0, 0))
+        self.player.append(Card(y + 450, random.randint(1, 13), 0, 1))
         self.revealedTime = None
         self.bet = bet
         self.playertotal = self.best_total(self.player)
@@ -237,7 +239,7 @@ class Blackjack(Game):
         if self.winner != 0:
             return
         if resp in "h ":
-            self.player.append(Card(0, self.y + 450, random.randint(1, 13), 0, len(self.player)))
+            self.player.append(Card(self.y + 450, random.randint(1, 13), 0, len(self.player)))
             for card in self.player:
                 card.rearr(len(self.player))
             playertotal = self.best_total(self.player)
@@ -245,11 +247,10 @@ class Blackjack(Game):
             if playertotal > 21:
                 self.winner = -1
                 self.dealertotal = self.best_total(self.dealer)
-                
                 self.timer.stime = time.monotonic() - (20 - 2)
                 self.dealer[1].paint()
             self.paint()
-        elif resp == "s":
+        else:
             hidden = self.dealer[1]
             self.dealertotal = self.best_total(self.dealer)
             if self.revealedTime is None:
@@ -258,30 +259,28 @@ class Blackjack(Game):
             self.paint()
     def best_total(self, hand):
         total = 0
-        ace = 0
+        has_ace = False
         for card in hand:
             total += card.val
             if card.val == 1:
-                ace = 1
-        if ace and total <= 11:
+                has_ace = True
+        if has_ace and total <= 11:
             total += 10
         return total
     def update(self):
         if self.revealedTime is not None:
             if time.monotonic() - self.revealedTime >= 1:
                 self.revealedTime = time.monotonic()
-                # dealer_total = self.best_total(self.dealer)
                 self.paint()
                 if self.dealertotal < 16:
-                    self.dealer.append(Card(0, self.y + 100, random.randint(1, 13), 0, len(self.dealer)))
+                    self.dealer.append(Card(self.y + 100, random.randint(1, 13), 0, len(self.dealer)))
                     for card in self.dealer:
                         card.rearr(len(self.dealer))
                     self.dealertotal = self.best_total(self.dealer)
                     self.paint()
                 else:
                     self.revealedTime = None
-                    self.timer.stime = time.monotonic() - (20 - 2)
-                    # self.dealertotal = self.playertotal
+                    self.timer.stime = time.monotonic() - (self.timer.total_time - 2)
                     if self.dealertotal < self.playertotal or self.dealertotal > 21:
                         self.winner = 1
                     elif self.dealertotal == self.playertotal:
@@ -324,12 +323,12 @@ class Chess(Game):
         Game.__init__(self, x, y, proj)
         self.board = chess.Board()
         diff = self.proj.diff
+        self.selected = None
+        self.tilesize = HALF / 8
         match diff:
             case 1:
-                # engine.configure({"Skill Level": 0})
                 self.board.remove_piece_at(chess.D8)
             case 2:
-                # engine.configure({"Skill Level": 5})
                 self.board.set_piece_at(chess.D8, chess.Piece(chess.ROOK, chess.BLACK))
             case 3:
                 engine.configure({"Skill Level": 5})
@@ -352,7 +351,6 @@ class Chess(Game):
                 for mv in self.board.legal_moves:
                     if mv.from_square == self.selected and mv.to_square == tileid:
                         draw_circle = 1
-                print(x, y)
                 pygame.draw.rect(self.image, col, pygame.Rect(rx, ry, WIDTH / 16, WIDTH / 16))
                 if piece is not None:
                     piece = piece.symbol()
@@ -478,9 +476,6 @@ class FinalProject:
     def run(self):
         self.title_screen()
         while self.running:
-            # print(all_sprites)
-            # print(time.monotonic())
-            # print(time.monotonic())
             current = time.monotonic()
             if self.in_game:
                 if self.nextmath < current:
@@ -509,7 +504,7 @@ class FinalProject:
                                 if isinstance(spr, MathGame):
                                     spr.response(event.unicode)
                                     break
-                        elif event.unicode in "sh ":
+                        elif event.unicode in "sh " or event.key == pygame.K_RETURN:
                             for spr in game_sprites:
                                 if isinstance(spr, Blackjack):
                                     spr.response(event.unicode)
@@ -583,7 +578,7 @@ class FinalProject:
         Fade(winning, proj)
 
     def gen_points(self, x, y, total, units):
-        amount = int(total / units)
+        amount = int(total // units)
         for i in range(amount):
             TimerAdder(x + HALF / 2, y + HALF / 2, units, (0, 200, 0) if units > 0 else (200, 0, 0), i, self)
     
